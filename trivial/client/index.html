@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Trivial NestJS - JWT Secure</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
+        h1, h2, h3 { color: #333; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input, button { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ddd; }
+        button { cursor: pointer; background-color: #007bff; color: white; border: none; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #c82333; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        #feedback { text-align: center; font-weight: bold; margin-top: 10px; min-height: 20px; }
+        .error { color: red; }
+        .success { color: green; }
+        
+        /* Clases para ocultar/mostrar secciones */
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>🧠 Trivial NestJS (Modo Seguro 🔒)</h1>
+
+    <div id="auth-section" class="card">
+        <h2>🔐 Iniciar Sesión</h2>
+        <input type="email" id="auth-email" placeholder="Email (ej: usuario@test.com)">
+        <input type="password" id="auth-pass" placeholder="Contraseña">
+        <input type="text" id="auth-name" placeholder="Nombre (Solo para registro)" style="display:none;">
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="login()">Entrar</button>
+            <button onclick="toggleRegister()" class="btn-secondary" id="btn-toggle-reg">Crear Cuenta</button>
+        </div>
+        <p id="auth-feedback" style="text-align: center; color: red;"></p>
+    </div>
+
+    <div id="game-app" class="hidden">
+        
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="user-display" style="font-weight: bold; color: #555;"></span>
+            <button onclick="logout()" class="btn-danger" style="width: auto; padding: 5px 15px;">Cerrar Sesión</button>
+        </div>
+
+        <div class="card">
+            <div id="score-display" style="font-size: 1.5em; text-align: center; color: #28a745; font-weight: bold;">Puntos: 0</div>
+        </div>
+
+        <div class="card">
+            <h2>🎮 Zona de Juego</h2>
+            <button onclick="getQuestion()">🎲 Sacar Pregunta</button>
+            
+            <div id="game-area" class="hidden" style="margin-top: 20px;">
+                <h3 id="question-text">...</h3>
+                <div id="options-container" class="options-grid"></div>
+            </div>
+            <div id="feedback"></div>
+        </div>
+
+        <div class="card" style="border-top: 5px solid #ffc107;">
+            <h2>🛠 Añadir Pregunta (Protegido)</h2>
+            <input type="text" id="new-question" placeholder="Pregunta">
+            <input type="text" id="new-options" placeholder="Opciones (ej: A, B, C)">
+            <input type="number" id="new-correct" placeholder="Índice correcta (0, 1, 2)">
+            <button onclick="createQuestion()" style="background-color: #ffc107; color: black;">Guardar</button>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN API
+        const BASE_URL = 'http://localhost:3000/api'; 
+        let token = localStorage.getItem('jwt_token'); // Recuperar token si existe
+        let currentQuestionId = null;
+
+        // --- FUNCIONES DE AUTH ---
+
+        function checkAuth() {
+            if (token) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('game-app').classList.remove('hidden');
+                // Decodificar el token para sacar el email (opcional, solo visual)
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    document.getElementById('user-display').innerText = `👤 ${payload.email}`;
+                } catch(e) {}
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('game-app').classList.add('hidden');
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-pass').value;
+            const name = document.getElementById('auth-name').value;
+            
+            // Si el campo nombre es visible, estamos registrando
+            const isRegistering = document.getElementById('auth-name').style.display !== 'none';
+            
+            const endpoint = isRegistering ? '/users' : '/auth/login';
+            const body = isRegistering ? { name, email, password } : { email, password };
+
+            try {
+                const res = await fetch(`${BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!res.ok) throw new Error(isRegistering ? 'Error al registrar' : 'Credenciales incorrectas');
+                const data = await res.json();
+
+                if (isRegistering) {
+                    alert("Usuario creado. Ahora inicia sesión.");
+                    toggleRegister(); // Volver a modo login
+                } else {
+                    // LOGIN EXITOSO: Guardamos el token
+                    token = data.access_token;
+                    localStorage.setItem('jwt_token', token);
+                    document.getElementById('auth-email').value = '';
+                    document.getElementById('auth-pass').value = '';
+                    checkAuth();
+                }
+            } catch (err) {
+                document.getElementById('auth-feedback').innerText = err.message;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('jwt_token');
+            token = null;
+            checkAuth();
+            location.reload();
+        }
+
+        function toggleRegister() {
+            const nameInput = document.getElementById('auth-name');
+            const btn = document.getElementById('btn-toggle-reg');
+            const isHidden = nameInput.style.display === 'none';
+            
+            nameInput.style.display = isHidden ? 'block' : 'none';
+            btn.innerText = isHidden ? 'Volver a Login' : 'Crear Cuenta';
+        }
+
+        // --- FUNCIÓN CLAVE: FETCH CON TOKEN ---
+        // Esta función envuelve al fetch normal y le pega el token automáticamente
+        async function authFetch(endpoint, options = {}) {
+            if (!options.headers) options.headers = {};
+            
+            // 1. AÑADIMOS EL TOKEN A LA CABECERA
+            options.headers['Authorization'] = `Bearer ${token}`;
+            options.headers['Content-Type'] = 'application/json';
+
+            const res = await fetch(`${BASE_URL}${endpoint}`, options);
+
+            // 2. SI EL TOKEN CADUCÓ (401), CERRAMOS SESIÓN
+            if (res.status === 401) {
+                alert("Tu sesión ha caducado. Vuelve a entrar.");
+                logout();
+                return null;
+            }
+            return res;
+        }
+
+        // --- LÓGICA DEL JUEGO (Usando authFetch) ---
+
+        async function getQuestion() {
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('options-container').innerHTML = '';
+            
+            try {
+                // Usamos /trivial, ajusta si tu controlador tiene otro prefijo
+                const res = await authFetch('/trivial'); 
+                if(!res) return;
+
+                const questions = await res.json();
+                
+                if (questions.length === 0) {
+                    alert("No hay preguntas en la BD. ¡Crea una!");
+                    return;
+                }
+
+                // Elegir una al azar del array devuelto por findAll()
+                // (Nota: Si tu backend ya tiene un endpoint /random, úsalo)
+                const randomQ = questions[Math.floor(Math.random() * questions.length)];
+                
+                currentQuestionId = randomQ._id || randomQ.id; // Soporta _id de Mongo
+                
+                document.getElementById('game-area').classList.remove('hidden');
+                document.getElementById('question-text').innerText = randomQ.question; // O .pregunta
+
+                const container = document.getElementById('options-container');
+                // Soporta campo "options" o "respuestas" según tu entidad
+                const options = randomQ.options || randomQ.respuestas || [];
+                
+                options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.innerText = opt;
+                    btn.className = 'btn-secondary';
+                    btn.onclick = () => sendAnswer(index);
+                    container.appendChild(btn);
+                });
+
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function sendAnswer(index) {
+            // Lógica simple de feedback (En un trivial real validarías contra el server)
+            // Como el GET /trivial devuelve la respuesta correcta, podemos validar aquí o crear endpoint de check
+            document.getElementById('feedback').innerText = "Respuesta enviada (Implementar validación)";
+        }
+
+        async function createQuestion() {
+            const question = document.getElementById('new-question').value;
+            const options = document.getElementById('new-options').value.split(',').map(s=>s.trim());
+            const correctAnswer = parseInt(document.getElementById('new-correct').value);
+
+            try {
+                const res = await authFetch('/trivial', {
+                    method: 'POST',
+                    body: JSON.stringify({ question, options, correctAnswer })
+                });
+
+                if (res && res.ok) {
+                    alert("Pregunta creada con éxito 💾");
+                    document.getElementById('new-question').value = '';
+                    document.getElementById('new-options').value = '';
+                } else {
+                    alert("Error al crear. Revisa los datos.");
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // Inicializar
+        checkAuth();
+
+    </script>
+</body>
+</html>
