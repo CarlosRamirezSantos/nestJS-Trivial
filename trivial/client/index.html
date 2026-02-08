@@ -34,8 +34,8 @@
         
         <div id="view-login">
             <h1>🔐 Iniciar Sesión</h1>
-            <input type="email" id="login-email" placeholder="Email" value="pepe@test.com">
-            <input type="password" id="login-password" placeholder="Contraseña" value="123456">
+            <input type="email" id="login-email" placeholder="Email">
+            <input type="password" id="login-password" placeholder="Contraseña">
             <button onclick="login()">Entrar</button>
             <p class="error" id="login-error"></p>
             <span class="link-text" onclick="showView('view-register')">¿No tienes cuenta? Regístrate aquí</span>
@@ -57,7 +57,7 @@
             <p>¿Qué quieres hacer hoy?</p>
             <button onclick="startGame()">🎮 Jugar al Trivial</button>
             <button onclick="showRanking()" class="btn-warning">🏆 Ver Ranking</button>
-            <button onclick="showView('view-add-question')" style="background-color: #17a2b8;">➕ Añadir Pregunta (Admin)</button>
+            <button id="admin-btn" onclick="showView('view-add-question')" class="hidden" style="background-color: #17a2b8;">➕ Añadir Pregunta (Admin)</button>
             <button onclick="logout()" class="btn-secondary" style="margin-top: 20px;">Cerrar Sesión</button>
         </div>
 
@@ -101,7 +101,6 @@
             <p class="success" id="add-success"></p>
             <button onclick="goMenu()" class="btn-secondary">Volver al Menú</button>
         </div>
-
     </div>
 
     <script>
@@ -110,21 +109,32 @@
         let currentQuestionId = null;
         let sessionScore = 0;
 
+        // Función para decodificar el JWT y ver los roles del usuario
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(window.atob(base64));
+            } catch (e) { return null; }
+        }
+
         function showView(viewId) {
             ['view-login', 'view-register', 'view-menu', 'view-game', 'view-ranking', 'view-add-question'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.classList.add('hidden');
             });
             document.getElementById(viewId).classList.remove('hidden');
-            ['login-error', 'reg-error', 'reg-success', 'add-error', 'add-success'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.innerText = '';
-            });
         }
-        function goMenu() { showView('view-menu'); }
-        function logout() { token = ''; sessionScore = 0; showView('view-login'); }
 
-        // --- 1. LOGIN ---
+        function goMenu() { showView('view-menu'); }
+        
+        function logout() { 
+            token = ''; 
+            sessionScore = 0; 
+            document.getElementById('admin-btn').classList.add('hidden'); // Ocultar al salir
+            showView('view-login'); 
+        }
+
         async function login() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -140,13 +150,22 @@
                 const data = await res.json();
                 if (res.ok) {
                     token = data.access_token;
+                    
+                    // Lógica para mostrar/ocultar botón admin
+                    const payload = parseJwt(token);
+                    if (payload && payload.roles && payload.roles.includes('admin')) {
+                        document.getElementById('admin-btn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('admin-btn').classList.add('hidden');
+                    }
+
                     document.getElementById('welcome-msg').innerText = `Hola, ${email.split('@')[0]}`;
                     showView('view-menu');
                 } else { errorMsg.innerText = 'Error: ' + (data.message || 'Credenciales incorrectas'); }
             } catch (err) { console.error(err); errorMsg.innerText = 'Error de conexión'; }
         }
 
-        // --- 2. REGISTRO ---
+        // ... (Funciones register, startGame, loadQuestion, submitAnswer, showRanking, createQuestion se mantienen igual) ...
         async function register() {
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
@@ -175,7 +194,6 @@
             } catch (err) { console.error(err); errorMsg.innerText = 'Error conexión'; }
         }
 
-        // --- 3. JUEGO ---
         function startGame() { sessionScore = 0; document.getElementById('local-score').innerText = 0; showView('view-game'); loadQuestion(); }
 
         async function loadQuestion() {
@@ -192,9 +210,6 @@
                 const question = data.data || data; 
                 if (!question) { qText.innerText = 'No hay preguntas.'; return; }
 
-                // 🔥 MANTENEMOS TU LÓGICA QUE FUNCIONA:
-                // Priorizamos _id (Mongo) si existe, y si no usamos id (Numérico).
-                // Esto te permite jugar con preguntas viejas y nuevas.
                 currentQuestionId = question._id || question.id; 
                 
                 qText.innerText = question.question;
@@ -223,7 +238,6 @@
                 const data = await res.json();
 
                 if (data.correct === true) {
-                    // 🔥 MEJORA: Leemos los puntos reales, pero si no vienen, usamos 20 por defecto.
                     const pointsEarned = data.points || 20;
 
                     document.getElementById('feedback-msg').innerText = `¡CORRECTO! 🎉 +${pointsEarned} Puntos`;
@@ -245,7 +259,6 @@
             } catch (err) { console.error(err); alert('Error al procesar la respuesta'); }
         }
 
-        // --- 4. RANKING ---
         async function showRanking() {
             showView('view-ranking');
             const tbody = document.getElementById('ranking-body');
@@ -258,10 +271,6 @@
                 
                 list.forEach((item, index) => {
                     const userName = item.name || 'Anónimo'; 
-                    
-                    // 🔥 AQUÍ ARREGLAMOS EL RANKING:
-                    // Usamos 'totalPoints' (del nuevo código) O 'score' (por si acaso).
-                    // Así no sale undefined nunca.
                     const score = (item.totalPoints !== undefined) ? item.totalPoints : (item.score || 0);
 
                     const tr = document.createElement('tr');
@@ -271,7 +280,6 @@
             } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="3">Error ranking</td></tr>'; }
         }
 
-        // --- 5. AÑADIR PREGUNTA ---
         async function createQuestion() {
             const question = document.getElementById('new-question').value.trim();
             const opt1 = document.getElementById('new-opt1').value.trim();
@@ -288,7 +296,6 @@
             if(!question || !opt1 || !opt2 || !opt3 || !opt4) { errorMsg.innerText = "Rellena todos los campos."; return; }
 
             const payload = {
-                // Generamos un ID numérico aleatorio para cumplir con el DTO
                 id: Math.floor(Math.random() * 1000000), 
                 question: question,
                 options: [opt1, opt2, opt3, opt4],

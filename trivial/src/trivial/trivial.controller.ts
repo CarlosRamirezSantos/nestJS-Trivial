@@ -1,4 +1,3 @@
-// src/trivial/trivial.controller.ts
 import { Controller, Get, Post, Body, UseGuards, Request, UsePipes, ValidationPipe } from '@nestjs/common';
 import { TrivialService } from './trivial.service';
 import { CreateQuestionDto } from './dto/create-question.dto';

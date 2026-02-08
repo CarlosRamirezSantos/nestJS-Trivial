@@ -19,13 +19,21 @@ export class TrivialService {
 
   async getRandomQuestion() {
     const count = await this.questionModel.countDocuments();
+    if (count === 0) return null;
+
     const random = Math.floor(Math.random() * count);
     const question = await this.questionModel.findOne().skip(random).exec();
     
     if (!question) return null;
     
-    const { correctAnswer, ...result } = question.toObject();
-    return result;
+    const questionObj = question.toObject();
+    
+    const { correctAnswer, _id, ...rest } = questionObj;
+    
+    return { 
+      id: _id.toString(), 
+      ...rest 
+    };
   }
 
   async answerQuestion(answerDto: AnswerDto, userId: string) {
@@ -33,7 +41,7 @@ export class TrivialService {
     const question = await this.questionModel.findById(answerDto.id);
     
     if (!question) {
-        throw new NotFoundException('Pregunta no encontrada');
+        throw new NotFoundException('Pregunta no encontrada en la base de datos');
     }
 
     const isCorrect = Number(question.correctAnswer) === Number(answerDto.option);
@@ -59,7 +67,10 @@ export class TrivialService {
     }
   }
 
- 
+  async removeAll() {
+    return this.questionModel.deleteMany({});
+  }
+
   async getScores() {
       return this.scoresService.getStats();
   }

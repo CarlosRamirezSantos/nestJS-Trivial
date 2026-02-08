@@ -27,7 +27,7 @@ export class JwtAuthGuard implements CanActivate {
         roles: Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles],
       };
 
-      return true; // Token válido, sigue al RolesGuard
+      return true; 
     } catch (err) {
       throw new UnauthorizedException('Invalid token');
     }

@@ -1,7 +1,7 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
@@ -12,19 +12,18 @@ export class AuthController {
 
     @Post('login')
     async login(@Body() body) {
-
         const user = await this.authService.validateUser(body.email, body.password);
+
+        if (!user) {
+            throw new UnauthorizedException('Email o contraseña incorrectos');
+        }
 
         return this.authService.login(user);
     }
 
-
     @Post('register')
     async register(@Body() createUserDto: CreateUserDto) {
-
         const user = await this.userService.create(createUserDto);
-
-
         return this.authService.login(user);
     }
 }

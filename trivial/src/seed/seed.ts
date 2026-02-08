@@ -9,7 +9,7 @@ async function bootstrap() {
   const usersService = app.get(UsersService);
   const trivialService = app.get(TrivialService);
 
-  console.log('🌱 INICIANDO SEED MANUAL...');
+  console.log('INICIANDO SEED MANUAL...');
 
   const adminEmail = 'admin@trivial.com';
   const adminPass = 'adminpassword123';
@@ -26,7 +26,7 @@ async function bootstrap() {
     }
 
 
-    console.log('   ⚡ Creando Admin...');
+    console.log('Creando Admin...');
     await usersService.create({
       name: 'Admin Principal',
       email: adminEmail,
@@ -34,20 +34,20 @@ async function bootstrap() {
       roles: ['admin', 'user'], 
     } as any);
     
-    console.log(`   ✅ Admin creado: ${adminEmail} / ${adminPass}`);
+    console.log(`Admin creado: ${adminEmail} / ${adminPass}`);
   } catch (error) {
-    console.error('   ❌ Error en bloque Admin:', error.message);
+    console.error('Error en bloque Admin:', error.message);
   }
 
-  console.log('📚 Gestionando Preguntas...');
+  console.log('Gestionando Preguntas...');
   
   try {
     if (trivialService['removeAll']) {
       await trivialService['removeAll']();
-      console.log('   🧹 Preguntas antiguas eliminadas.');
+      console.log('Preguntas antiguas eliminadas.');
     }
   } catch (e) {
-    console.log('   ⚠️ No se pudieron borrar preguntas antiguas automáticamente.');
+    console.log('No se pudieron borrar preguntas antiguas automáticamente.');
   }
 
   const preguntas = [
@@ -107,10 +107,10 @@ async function bootstrap() {
 
     await trivialService.create(p as any);
   }
-  console.log(`   ✅ ${preguntas.length} Preguntas insertadas.`);
+  console.log(`${preguntas.length} Preguntas insertadas.`);
 
   await app.close();
-  console.log('👋 SEED FINALIZADO.');
+  console.log('SEED FINALIZADO.');
 }
 
 bootstrap();
