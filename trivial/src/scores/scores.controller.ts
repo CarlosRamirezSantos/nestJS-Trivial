@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Request, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ScoresService } from './scores.service';
 import { CreateScoreDto } from './dto/create-score.dto';
 import { JwtAuthGuard } from '../auth/jwt_strategy/jwt-auth.guard'; 
 
 @Controller('scores')
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
 export class ScoresController {
   constructor(private readonly scoresService: ScoresService) {}
 

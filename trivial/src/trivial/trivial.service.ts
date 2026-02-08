@@ -18,24 +18,19 @@ export class TrivialService {
   }
 
   async getRandomQuestion() {
-    const count = await this.questionModel.countDocuments();
-    if (count === 0) return null;
+  const count = await this.questionModel.countDocuments();
+  if (count === 0) return null;
 
-    const random = Math.floor(Math.random() * count);
-    const question = await this.questionModel.findOne().skip(random).exec();
+  const random = Math.floor(Math.random() * count);
+  
+  const question = await this.questionModel
+    .findOne()
+    .skip(random)
+    .select('-correctAnswer') // Esto evita que el usuario vea la solución en la respuesta HTTP
+    .exec();
     
-    if (!question) return null;
-    
-    const questionObj = question.toObject();
-    
-    const { correctAnswer, _id, ...rest } = questionObj;
-    
-    return { 
-      id: _id.toString(), 
-      ...rest 
-    };
-  }
-
+  return question;
+}
   async answerQuestion(answerDto: AnswerDto, userId: string) {
 
     const question = await this.questionModel.findById(answerDto.id);
