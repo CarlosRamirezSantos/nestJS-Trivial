@@ -26,7 +26,7 @@ import { ScoresModule } from './scores/scores.module';
 
     ScoresModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

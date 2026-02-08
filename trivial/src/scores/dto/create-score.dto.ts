@@ -5,5 +5,5 @@ export class CreateScoreDto {
     user: string;
 
     @IsNumber()
-    score: number;
+    points: number;
 }

@@ -8,7 +8,7 @@ export class Score extends Document {
   user: User; 
 
   @Prop({ required: true })
-  score: number;
+  points: number;
 
   @Prop({ default: Date.now })
   date: Date;

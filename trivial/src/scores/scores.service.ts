@@ -15,14 +15,14 @@ export class ScoresService {
       throw new BadRequestException('ID de usuario inválido');
     }
 
-    const puntosAGuardar = createScoreDto.score || 20;
+    const puntosAGuardar = createScoreDto.points || 20;
 
     return await this.scoreModel.create({
 
         user: new Types.ObjectId(userId), 
         
 
-        score: puntosAGuardar, 
+        points: puntosAGuardar, 
         
         date: new Date()
     });
@@ -36,7 +36,7 @@ export class ScoresService {
           _id: '$user', 
           
 
-          totalPoints: { $sum: '$score' } 
+          totalPoints: { $sum: '$points' } 
         }
       },
       { 

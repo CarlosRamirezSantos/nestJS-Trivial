@@ -49,7 +49,7 @@ export class TrivialService {
     if (isCorrect) {
 
         await this.scoresService.create({
-            score: question.points, 
+            points: question.points, 
             user: userId
         }, userId);
 
