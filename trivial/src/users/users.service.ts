@@ -10,22 +10,22 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const exists = await this.userModel.findOne({ email: createUserDto.email });
-    if (exists) {
-        throw new BadRequestException('El email ya existe');
-    }
-
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-
-    const newUser = await this.userModel.create({
-      ...createUserDto,
-      password: hashedPassword,
-      roles: ['user'],
-    });
-
-    return newUser;
+ async create(createUserDto: CreateUserDto) {
+  const exists = await this.userModel.findOne({ email: createUserDto.email });
+  if (exists) {
+      throw new BadRequestException('El email ya existe');
   }
+
+  const { password, ...restoDeDatos } = createUserDto; 
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser = await this.userModel.create({
+    ...restoDeDatos,
+    password: hashedPassword,
+  });
+
+  return newUser;
+}
 
   async findAll() {
     return this.userModel.find().exec();
