@@ -1,8 +1,8 @@
-import { IsInt, Min } from 'class-validator';
+import { IsInt, IsString, Min } from 'class-validator';
 
 export class AnswerDto {
-    @IsInt()
-    id: number;
+    @IsString()
+    id: string;
 
     @IsInt()
     @Min(0)

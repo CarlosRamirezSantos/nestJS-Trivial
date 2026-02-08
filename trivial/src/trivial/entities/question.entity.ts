@@ -14,6 +14,9 @@ export class Question extends Document {
 
     @Prop({ required: true })
     correctAnswer: number;
+
+    @Prop({ default: 20 }) 
+    points: number;
 }
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);

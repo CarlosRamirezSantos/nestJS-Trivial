@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
+import { ScoresModule } from './scores/scores.module';
 
 @Module({
   imports: [
@@ -22,6 +23,8 @@ import { AuthModule } from './auth/auth.module';
     UsersModule,
 
     AuthModule,
+
+    ScoresModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],
