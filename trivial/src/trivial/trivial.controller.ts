@@ -4,8 +4,8 @@ import { TrivialService } from './trivial.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { AnswerDto } from './dto/answer.dto';
 import { JwtAuthGuard } from '../auth/jwt_strategy/jwt-auth.guard'; 
-import { Roles } from 'src/auth/roles/roles.decorator';
-import { RolesGuard } from 'src/auth/roles/roles.guard';
+import { Roles } from '../auth/roles/roles.decorator';
+import { RolesGuard } from '../auth/roles/roles.guard';
 
 @Controller('trivial')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }))
@@ -13,8 +13,8 @@ export class TrivialController {
   constructor(private readonly trivialService: TrivialService) {}
 
  @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard) // Protege el endpoint
-  @Roles('admin') // Solo permite a usuarios con el rol 'admin'
+  @UseGuards(JwtAuthGuard, RolesGuard) 
+  @Roles('admin')
   create(@Body() createQuestionDto: CreateQuestionDto) {
     return this.trivialService.create(createQuestionDto);
   }
@@ -28,8 +28,7 @@ export class TrivialController {
   @Post('answer')
   @UseGuards(JwtAuthGuard) 
   answer(@Body() answerDto: AnswerDto, @Request() req) {
-    // ❌ ANTES: req.user.userId (Esto era undefined)
-    // ✅ AHORA: req.user.id (Así es como lo guarda tu JwtStrategy)
+
     return this.trivialService.answerQuestion(answerDto, req.user.id);
   }
 }

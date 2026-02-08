@@ -3,8 +3,6 @@ import { Document } from 'mongoose';
 
 @Schema({ collection: 'questions' })
 export class Question extends Document {
-    @Prop({ unique: true, index: true, required: true })
-    id: number;
 
     @Prop({ required: true })
     question: string;

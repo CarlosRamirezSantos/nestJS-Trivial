@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ScoresService } from './scores.service';
 import { ScoresController } from './scores.controller';
 import { Score, ScoreSchema } from './entities/score.entity';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
