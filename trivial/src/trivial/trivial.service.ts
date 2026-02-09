@@ -5,6 +5,7 @@ import { Question } from './entities/question.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { AnswerDto } from './dto/answer.dto';
 import { ScoresService } from '../scores/scores.service'; 
+import { UpdateQuestionDto } from './dto/update-question.dto';
 
 @Injectable()
 export class TrivialService {
@@ -61,6 +62,28 @@ export class TrivialService {
         };
     }
   }
+  async remove(id: string) {
+    const result = await this.questionModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException(`Pregunta con ID ${id} no encontrada`);
+    }
+    return { deleted: true };
+  }
+
+  async update(id: string, updateQuestionDto: UpdateQuestionDto) {
+    const updatedQuestion = await this.questionModel
+      .findByIdAndUpdate(id, updateQuestionDto, { new: true })
+      .exec();
+    
+    if (!updatedQuestion) {
+      throw new NotFoundException(`Pregunta con ID ${id} no encontrada`);
+    }
+    return updatedQuestion;
+  }
+
+  async findAll() {
+  return await this.questionModel.find().exec();
+}
 
   async removeAll() {
     return this.questionModel.deleteMany({});

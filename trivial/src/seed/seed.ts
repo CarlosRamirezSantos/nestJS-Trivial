@@ -14,13 +14,13 @@ async function bootstrap() {
   const adminEmail = 'admin@trivial.com';
   const adminPass = 'adminpassword123';
 
-  console.log('👤 Gestionando usuario Admin...');
+  console.log('Gestionando usuario Admin...');
 
   try {
     const existingUser = await usersService.findEmail(adminEmail).catch(() => null);
 
     if (existingUser) {
-      console.log('   ♻️ Usuario encontrado. Borrando para regenerar limpio...');
+      console.log('Usuario encontrado. Borrando para regenerar limpio...');
 
       await usersService.remove(existingUser.id);
     }

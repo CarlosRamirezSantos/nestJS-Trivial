@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trivial NestJS</title>
+    <title>Trivial NestJS - Admin</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 450px; text-align: center; max-height: 90vh; overflow-y: auto; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 500px; text-align: center; max-height: 90vh; overflow-y: auto; }
         h1 { color: #333; margin-bottom: 20px; font-size: 1.5em; }
         input, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
         label { display: block; text-align: left; font-weight: bold; margin-top: 10px; font-size: 0.9em; }
@@ -16,16 +16,18 @@
         .btn-secondary { background-color: #6c757d; } .btn-secondary:hover { background-color: #5a6268; }
         .btn-success { background-color: #28a745; } .btn-success:hover { background-color: #218838; }
         .btn-warning { background-color: #ffc107; color: black; } .btn-warning:hover { background-color: #e0a800; }
+        .btn-danger { background-color: #dc3545; } .btn-danger:hover { background-color: #c82333; }
         .link-text { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 15px; display: block; font-size: 0.9em; }
         .btn-option { background-color: #f8f9fa; color: #333; border: 1px solid #ddd; margin-bottom: 8px; transition: background 0.3s; }
-        .btn-option:hover { background-color: #e2e6ea; }
         .hidden { display: none !important; }
         .error { color: red; font-size: 0.9em; margin-top: 10px; }
         .success { color: green; font-size: 0.9em; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
+        th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; }
+        .action-btns { display: flex; gap: 5px; }
+        .action-btns button { padding: 5px 8px; font-size: 12px; margin: 0; width: auto; }
         .score-board { font-size: 1.2em; font-weight: bold; color: #28a745; margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
@@ -54,33 +56,44 @@
 
         <div id="view-menu" class="hidden">
             <h1 id="welcome-msg">Bienvenido</h1>
-            <p>¿Qué quieres hacer hoy?</p>
             <button onclick="startGame()">🎮 Jugar al Trivial</button>
             <button onclick="showRanking()" class="btn-warning">🏆 Ver Ranking</button>
-            <button id="admin-btn" onclick="showView('view-add-question')" class="hidden" style="background-color: #17a2b8;">➕ Añadir Pregunta (Admin)</button>
+            <div id="admin-controls" class="hidden">
+                <button onclick="prepareCreate()" style="background-color: #17a2b8;">➕ Añadir Pregunta</button>
+                <button onclick="loadManageQuestions()" style="background-color: #6f42c1;">⚙️ Gestionar Todas las Preguntas</button>
+            </div>
             <button onclick="logout()" class="btn-secondary" style="margin-top: 20px;">Cerrar Sesión</button>
         </div>
 
         <div id="view-game" class="hidden">
-            <div class="score-board">Puntos sesión: <span id="local-score">0</span></div>
-            <h3 id="question-text">Cargando pregunta...</h3>
+            <div class="score-board">Puntos: <span id="local-score">0</span></div>
+            <h3 id="question-text">Cargando...</h3>
             <div id="options-area"></div>
-            <p id="feedback-msg" style="font-weight: bold; height: 20px;"></p>
+            <p id="feedback-msg" style="font-weight: bold; font-size: 1.1em;"></p>
             <button id="btn-next" onclick="loadQuestion()" class="hidden">Siguiente Pregunta ➡</button>
-            <button onclick="goMenu()" class="btn-secondary" style="margin-top: 20px;">Volver al Menú</button>
+            <button onclick="goMenu()" class="btn-secondary">Volver al Menú</button>
         </div>
 
-        <div id="view-ranking" class="hidden">
-            <h1>🏆 Top 10 Jugadores</h1>
-            <table>
-                <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr></thead>
-                <tbody id="ranking-body"></tbody>
-            </table>
-            <button onclick="goMenu()" class="btn-secondary" style="margin-top: 20px;">Volver al Menú</button>
+        <div id="view-manage-questions" class="hidden">
+            <h1>⚙️ Lista de Preguntas</h1>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pregunta</th>
+                            <th>Pts</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-questions-list"></tbody>
+                </table>
+            </div>
+            <button onclick="goMenu()" class="btn-secondary" style="margin-top:20px;">Volver al Menú</button>
         </div>
 
         <div id="view-add-question" class="hidden">
-            <h1>➕ Nueva Pregunta</h1>
+            <h1 id="form-title">➕ Nueva Pregunta</h1>
+            <input type="hidden" id="edit-question-id">
             <input type="text" id="new-question" placeholder="Escribe la pregunta..." required>
             <label>Opciones:</label>
             <input type="text" id="new-opt1" placeholder="Opción A" required>
@@ -96,10 +109,17 @@
             </select>
             <label>Puntos:</label>
             <input type="number" id="new-points" value="20" min="1">
-            <button onclick="createQuestion()" class="btn-success">Guardar</button>
-            <p class="error" id="add-error"></p>
-            <p class="success" id="add-success"></p>
-            <button onclick="goMenu()" class="btn-secondary">Volver al Menú</button>
+            <button id="btn-save-question" onclick="saveQuestion()" class="btn-success">Guardar</button>
+            <button onclick="goMenu()" class="btn-secondary">Cancelar</button>
+        </div>
+
+        <div id="view-ranking" class="hidden">
+            <h1>🏆 Top Jugadores</h1>
+            <table>
+                <thead><tr><th>Jugador</th><th>Puntos</th></tr></thead>
+                <tbody id="ranking-body"></tbody>
+            </table>
+            <button onclick="goMenu()" class="btn-secondary">Volver</button>
         </div>
     </div>
 
@@ -109,16 +129,8 @@
         let currentQuestionId = null;
         let sessionScore = 0;
 
-        function parseJwt(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                return JSON.parse(window.atob(base64));
-            } catch (e) { return null; }
-        }
-
         function showView(viewId) {
-            ['view-login', 'view-register', 'view-menu', 'view-game', 'view-ranking', 'view-add-question'].forEach(id => {
+            ['view-login', 'view-register', 'view-menu', 'view-game', 'view-ranking', 'view-add-question', 'view-manage-questions'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.classList.add('hidden');
             });
@@ -129,17 +141,17 @@
         
         function logout() { 
             token = ''; 
-            sessionScore = 0; 
-            document.getElementById('admin-btn').classList.add('hidden');
+            document.getElementById('admin-controls').classList.add('hidden');
             showView('view-login'); 
+        }
+
+        function parseJwt(token) {
+            try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; }
         }
 
         async function login() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            const errorMsg = document.getElementById('login-error');
-            if(!email || !password) { errorMsg.innerText = "Rellena todos los campos"; return; }
-
             try {
                 const res = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
@@ -150,46 +162,101 @@
                 if (res.ok) {
                     token = data.access_token;
                     const payload = parseJwt(token);
-                    if (payload && payload.roles && payload.roles.includes('admin')) {
-                        document.getElementById('admin-btn').classList.remove('hidden');
-                    } else {
-                        document.getElementById('admin-btn').classList.add('hidden');
+                    if (payload?.roles?.includes('admin')) {
+                        document.getElementById('admin-controls').classList.remove('hidden');
                     }
-                    document.getElementById('welcome-msg').innerText = `Hola, ${email.split('@')[0]}`;
                     showView('view-menu');
-                } else { errorMsg.innerText = 'Error: ' + (data.message || 'Credenciales incorrectas'); }
-            } catch (err) { console.error(err); errorMsg.innerText = 'Error de conexión'; }
+                } else { alert(data.message); }
+            } catch (err) { alert('Error de conexión'); }
         }
 
-        async function register() {
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const errorMsg = document.getElementById('reg-error');
-            const successMsg = document.getElementById('reg-success');
-            if(!name || !email || !password) { errorMsg.innerText = "Rellena campos"; return; }
-
+        async function loadManageQuestions() {
+            const tbody = document.getElementById('admin-questions-list');
+            tbody.innerHTML = '<tr><td colspan="3">Cargando lista...</td></tr>';
+            showView('view-manage-questions');
             try {
-                const res = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                const res = await fetch(`${API_URL}/trivial/all`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
                 });
-                const data = await res.json();
-                if (res.ok) {
-                    if (data.access_token) {
-                        token = data.access_token;
-                        document.getElementById('welcome-msg').innerText = `Hola, ${name}`;
-                        showView('view-menu');
-                    } else {
-                        successMsg.innerText = "Creado. Inicia sesión.";
-                        setTimeout(() => showView('view-login'), 1500);
-                    }
-                } else { errorMsg.innerText = 'Error: ' + (data.message || 'Fallo registro'); }
-            } catch (err) { console.error(err); errorMsg.innerText = 'Error conexión'; }
+                const questions = await res.json();
+                tbody.innerHTML = '';
+                questions.forEach(q => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${q.question}</td>
+                        <td>${q.points || 0}</td>
+                        <td class="action-btns">
+                            <button onclick="prepareEdit('${q._id}', '${q.question.replace(/'/g, "\\'")}', ${JSON.stringify(q.options).replace(/"/g, '&quot;')}, ${q.correctAnswer}, ${q.points})" class="btn-warning">✏️</button>
+                            <button onclick="deleteQuestion('${q._id}')" class="btn-danger">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="3">Error al cargar datos.</td></tr>'; }
         }
 
-        function startGame() { sessionScore = 0; document.getElementById('local-score').innerText = 0; showView('view-game'); loadQuestion(); }
+        function prepareCreate() {
+            document.getElementById('form-title').innerText = "➕ Nueva Pregunta";
+            document.getElementById('edit-question-id').value = "";
+            document.getElementById('btn-save-question').innerText = "Guardar Pregunta";
+            clearForm();
+            showView('view-add-question');
+        }
+
+        function prepareEdit(id, question, options, correct, points) {
+            document.getElementById('form-title').innerText = "✏️ Editar Pregunta";
+            document.getElementById('edit-question-id').value = id;
+            document.getElementById('new-question').value = question;
+            document.getElementById('new-opt1').value = options[0] || '';
+            document.getElementById('new-opt2').value = options[1] || '';
+            document.getElementById('new-opt3').value = options[2] || '';
+            document.getElementById('new-opt4').value = options[3] || '';
+            document.getElementById('new-correct-idx').value = correct;
+            document.getElementById('new-points').value = points;
+            document.getElementById('btn-save-question').innerText = "Actualizar Cambios";
+            showView('view-add-question');
+        }
+
+        async function saveQuestion() {
+            const id = document.getElementById('edit-question-id').value;
+            const payload = {
+                question: document.getElementById('new-question').value,
+                options: [document.getElementById('new-opt1').value, document.getElementById('new-opt2').value, document.getElementById('new-opt3').value, document.getElementById('new-opt4').value],
+                correctAnswer: parseInt(document.getElementById('new-correct-idx').value),
+                points: parseInt(document.getElementById('new-points').value)
+            };
+            const url = id ? `${API_URL}/trivial/${id}` : `${API_URL}/trivial`;
+            const method = id ? 'PATCH' : 'POST';
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert('Operación realizada con éxito');
+                    loadManageQuestions();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.message || 'No autorizado'));
+                }
+            } catch (err) { alert('Error de conexión'); }
+        }
+
+        async function deleteQuestion(id) {
+            if (!confirm('¿Seguro que deseas eliminar esta pregunta definitivamente?')) return;
+            try {
+                const res = await fetch(`${API_URL}/trivial/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) loadManageQuestions();
+            } catch (err) { alert('Error de conexión'); }
+        }
+
+        function clearForm() {
+            document.querySelectorAll('#view-add-question input').forEach(i => i.value = i.type === 'number' ? 20 : '');
+        }
 
         async function loadQuestion() {
             const qText = document.getElementById('question-text');
@@ -197,121 +264,63 @@
             const feedback = document.getElementById('feedback-msg');
             const btnNext = document.getElementById('btn-next');
             qText.innerText = 'Cargando...'; optsArea.innerHTML = ''; feedback.innerText = ''; btnNext.classList.add('hidden');
-
             try {
                 const res = await fetch(`${API_URL}/trivial/random`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!res.ok) throw new Error('Error al cargar');
-                const data = await res.json();
-                const question = data.data || data; 
-                if (!question) { qText.innerText = 'No hay preguntas.'; return; }
-
-                currentQuestionId = question._id || question.id; 
-                
-                qText.innerText = question.question;
-                if(question.points) qText.innerText += ` (${question.points} pts)`;
-
-                question.options.forEach((opt, index) => {
+                const q = await res.json();
+                currentQuestionId = q._id;
+                qText.innerText = q.question;
+                q.options.forEach((opt, index) => {
                     const btn = document.createElement('button');
                     btn.className = 'btn-option'; btn.innerText = opt;
                     btn.onclick = () => submitAnswer(index, btn);
                     optsArea.appendChild(btn);
                 });
-            } catch (err) { console.error(err); qText.innerText = 'Error conexión'; }
+            } catch (err) { qText.innerText = 'No hay preguntas disponibles.'; }
         }
 
-        async function submitAnswer(optionIndex, btnElement) {
-            const allBtns = document.querySelectorAll('.btn-option');
-            allBtns.forEach(b => b.disabled = true);
-
-            try {
-                const res = await fetch(`${API_URL}/trivial/answer`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ id: currentQuestionId, option: optionIndex })
-                });
-
-                const data = await res.json();
-
-                if (data.correct === true) {
-                    const pointsEarned = data.points || 20;
-                    document.getElementById('feedback-msg').innerText = `¡CORRECTO! 🎉 +${pointsEarned} Puntos`;
-                    document.getElementById('feedback-msg').style.color = 'green';
-                    btnElement.style.backgroundColor = '#28a745'; 
-                    btnElement.style.color = 'white';
-                    sessionScore += pointsEarned;
-                    document.getElementById('local-score').innerText = sessionScore;
-                } else {
-                    document.getElementById('feedback-msg').innerText = '¡FALLASTE! 😢';
-                    document.getElementById('feedback-msg').style.color = 'red';
-                    btnElement.style.backgroundColor = '#dc3545'; 
-                    btnElement.style.color = 'white';
-                }
-                document.getElementById('btn-next').classList.remove('hidden');
-            } catch (err) { console.error(err); alert('Error al procesar la respuesta'); }
+        async function submitAnswer(index, btn) {
+            const res = await fetch(`${API_URL}/trivial/answer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ id: currentQuestionId, option: index })
+            });
+            const data = await res.json();
+            const feedback = document.getElementById('feedback-msg');
+            
+            if (data.correct) {
+                feedback.innerText = `¡CORRECTO! 🎉 +${data.points} Puntos`;
+                feedback.style.color = 'green';
+                btn.style.backgroundColor = '#28a745'; 
+                btn.style.color = 'white';
+                sessionScore += data.points;
+                document.getElementById('local-score').innerText = sessionScore;
+            } else {
+                feedback.innerText = 'FALLASTE 😢'; 
+                feedback.style.color = 'red';
+                btn.style.backgroundColor = '#dc3545'; 
+                btn.style.color = 'white';
+            }
+            
+            document.querySelectorAll('.btn-option').forEach(b => b.disabled = true);
+            document.getElementById('btn-next').classList.remove('hidden');
         }
+
+        function startGame() { sessionScore = 0; document.getElementById('local-score').innerText = 0; showView('view-game'); loadQuestion(); }
 
         async function showRanking() {
             showView('view-ranking');
             const tbody = document.getElementById('ranking-body');
-            tbody.innerHTML = '<tr><td colspan="3">Cargando...</td></tr>';
+            tbody.innerHTML = '<tr><td>Cargando...</td><td></td></tr>';
             try {
                 const res = await fetch(`${API_URL}/scores`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const list = await res.json();
                 tbody.innerHTML = '';
-                if (!list || list.length === 0) { tbody.innerHTML = '<tr><td colspan="3">Sin datos.</td></tr>'; return; }
-                
-                list.forEach((item, index) => {
-                    const userName = item.name || 'Anónimo'; 
-                    const score = (item.totalPoints !== undefined) ? item.totalPoints : (item.score || 0);
+                list.forEach(item => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${index+1}</td><td>${userName}</td><td><strong>${score}</strong></td>`;
+                    tr.innerHTML = `<td>${item.name || 'Usuario'}</td><td>${item.totalPoints || 0}</td>`;
                     tbody.appendChild(tr);
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="3">Error ranking</td></tr>'; }
-        }
-
-        async function createQuestion() {
-            const question = document.getElementById('new-question').value.trim();
-            const opt1 = document.getElementById('new-opt1').value.trim();
-            const opt2 = document.getElementById('new-opt2').value.trim();
-            const opt3 = document.getElementById('new-opt3').value.trim();
-            const opt4 = document.getElementById('new-opt4').value.trim();
-            const correctIdx = document.getElementById('new-correct-idx').value;
-            const pointsVal = document.getElementById('new-points').value;
-            
-            const errorMsg = document.getElementById('add-error');
-            const successMsg = document.getElementById('add-success');
-            errorMsg.innerText = ''; successMsg.innerText = '';
-
-            if(!question || !opt1 || !opt2 || !opt3 || !opt4) { errorMsg.innerText = "Rellena todos los campos."; return; }
-
-            const payload = {
-                id: Math.floor(Math.random() * 1000000), 
-                question: question,
-                options: [opt1, opt2, opt3, opt4],
-                correctAnswer: parseInt(correctIdx),
-                points: parseInt(pointsVal) || 20 
-            };
-
-            try {
-                const res = await fetch(`${API_URL}/trivial`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    successMsg.innerText = "✅ Pregunta guardada correctamente.";
-                    document.getElementById('new-question').value = "";
-                    document.getElementById('new-opt1').value = "";
-                    document.getElementById('new-opt2').value = "";
-                    document.getElementById('new-opt3').value = "";
-                    document.getElementById('new-opt4').value = "";
-                } else {
-                    errorMsg.innerText = "Error: " + (data.message || JSON.stringify(data.message));
-                }
-            } catch (err) { console.error(err); errorMsg.innerText = "Error de conexión"; }
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="2">Error al cargar ranking</td></tr>'; }
         }
     </script>
 </body>
