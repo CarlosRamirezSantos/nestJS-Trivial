@@ -109,7 +109,6 @@
         let currentQuestionId = null;
         let sessionScore = 0;
 
-        // Función para decodificar el JWT y ver los roles del usuario
         function parseJwt(token) {
             try {
                 const base64Url = token.split('.')[1];
@@ -131,7 +130,7 @@
         function logout() { 
             token = ''; 
             sessionScore = 0; 
-            document.getElementById('admin-btn').classList.add('hidden'); // Ocultar al salir
+            document.getElementById('admin-btn').classList.add('hidden');
             showView('view-login'); 
         }
 
@@ -150,22 +149,18 @@
                 const data = await res.json();
                 if (res.ok) {
                     token = data.access_token;
-                    
-                    // Lógica para mostrar/ocultar botón admin
                     const payload = parseJwt(token);
                     if (payload && payload.roles && payload.roles.includes('admin')) {
                         document.getElementById('admin-btn').classList.remove('hidden');
                     } else {
                         document.getElementById('admin-btn').classList.add('hidden');
                     }
-
                     document.getElementById('welcome-msg').innerText = `Hola, ${email.split('@')[0]}`;
                     showView('view-menu');
                 } else { errorMsg.innerText = 'Error: ' + (data.message || 'Credenciales incorrectas'); }
             } catch (err) { console.error(err); errorMsg.innerText = 'Error de conexión'; }
         }
 
-        // ... (Funciones register, startGame, loadQuestion, submitAnswer, showRanking, createQuestion se mantienen igual) ...
         async function register() {
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
@@ -239,15 +234,12 @@
 
                 if (data.correct === true) {
                     const pointsEarned = data.points || 20;
-
                     document.getElementById('feedback-msg').innerText = `¡CORRECTO! 🎉 +${pointsEarned} Puntos`;
                     document.getElementById('feedback-msg').style.color = 'green';
                     btnElement.style.backgroundColor = '#28a745'; 
                     btnElement.style.color = 'white';
-                    
                     sessionScore += pointsEarned;
                     document.getElementById('local-score').innerText = sessionScore;
-
                 } else {
                     document.getElementById('feedback-msg').innerText = '¡FALLASTE! 😢';
                     document.getElementById('feedback-msg').style.color = 'red';
@@ -255,7 +247,6 @@
                     btnElement.style.color = 'white';
                 }
                 document.getElementById('btn-next').classList.remove('hidden');
-
             } catch (err) { console.error(err); alert('Error al procesar la respuesta'); }
         }
 
@@ -272,7 +263,6 @@
                 list.forEach((item, index) => {
                     const userName = item.name || 'Anónimo'; 
                     const score = (item.totalPoints !== undefined) ? item.totalPoints : (item.score || 0);
-
                     const tr = document.createElement('tr');
                     tr.innerHTML = `<td>${index+1}</td><td>${userName}</td><td><strong>${score}</strong></td>`;
                     tbody.appendChild(tr);
